@@ -5,3 +5,6 @@ numpy
 plotly
 openpyxl
 matplotlib
+requests
+beautifulsoup4
+lxml
