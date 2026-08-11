@@ -765,7 +765,7 @@ with main_tab2:
 
         s_tab = st.tabs(["🚀 Wzrosty", "💥 Spadki", "📊 Wolumen", "🏆 52W High", "📉 52W Low", "💎 Tanie", "🔥 Momentum"])
 
-        def render_okazje(dane, kolumny_extra, tytul, sort_col, ascending=False):
+        def render_okazje(dane, kolumny_extra, tytul, sort_col, ascending=False, tab_id="tab"):
             st.markdown(f"### {tytul}")
             if len(dane) == 0:
                 st.info("Brak spolek spelniajacych kryteria")
@@ -794,20 +794,20 @@ with main_tab2:
                     with col4:
                         bcol1, bcol2 = st.columns(2)
                         with bcol1:
-                            if st.button("📰 News", key=f"news_{row['Ticker']}_{idx}"):
-                                st.session_state[f"show_news_{row['Ticker']}"] = True
+                            if st.button("📰 News", key=f"news_{tab_id}_{row['Ticker']}_{idx}"):
+                                st.session_state[f"show_news_{tab_id}_{row['Ticker']}"] = True
                         with bcol2:
                             already = row['Ticker'] in get_all_tickers()
                             if already:
                                 st.caption("✅ obserwowane")
                             else:
-                                if st.button("➕ Obserwuj", key=f"add_{row['Ticker']}_{idx}"):
+                                if st.button("➕ Obserwuj", key=f"add_{tab_id}_{row['Ticker']}_{idx}"):
                                     ok, msg = dodaj_do_obserwowanych(row['Ticker'], row['Nazwa'])
                                     if ok:
                                         st.success(msg)
                                         time.sleep(1)
                                         st.rerun()
-                    if st.session_state.get(f"show_news_{row['Ticker']}"):
+                    if st.session_state.get(f"show_news_{tab_id}_{row['Ticker']}"):
                         with st.expander(f"📰 Newsy dla {row['Nazwa']}", expanded=True):
                             with st.spinner("Pobieram newsy..."):
                                 newsy = pobierz_newsy(row['Ticker'])
@@ -818,8 +818,8 @@ with main_tab2:
                                     st.markdown("---")
                             else:
                                 st.info("Brak dostepnych newsow")
-                            if st.button("✖️ Zamknij", key=f"close_{row['Ticker']}_{idx}"):
-                                st.session_state[f"show_news_{row['Ticker']}"] = False
+                            if st.button("✖️ Zamknij", key=f"close_{tab_id}_{row['Ticker']}_{idx}"):
+                                st.session_state[f"show_news_{tab_id}_{row['Ticker']}"] = False
                                 st.rerun()
                     st.markdown("---")
 
@@ -833,7 +833,7 @@ with main_tab2:
                 ("Wolumen%", "Wol %"),
                 ("RSI", "RSI"),
                 ("MACD", "MACD")
-            ], f"🚀 TOP wzrosty ({interval})", col, ascending=False)
+            ], f"🚀 TOP wzrosty ({interval})", col, ascending=False, tab_id="wzrosty")
 
         with s_tab[1]:
             interval2 = st.radio("Okres:", ["1 dzien", "1 tydzien", "1 miesiac", "3 miesiace"], horizontal=True, key="spadek_int")
@@ -845,7 +845,7 @@ with main_tab2:
                 ("Wolumen%", "Wol %"),
                 ("Od_High%", "Od 52W High %"),
                 ("RSI", "RSI")
-            ], f"💥 TOP spadki ({interval2})", col, ascending=True)
+            ], f"💥 TOP spadki ({interval2})", col, ascending=True, tab_id="spadki")
 
         with s_tab[2]:
             st.markdown("*Spolki z nietypowym wolumenem*")
@@ -859,7 +859,7 @@ with main_tab2:
                 ("1D%", "Zmiana 1D"),
                 ("1T%", "Zmiana 1T"),
                 ("RSI", "RSI")
-            ], f"📊 Nietypowy wolumen (>{prog_wol}%)", "Wolumen%", ascending=False)
+            ], f"📊 Nietypowy wolumen (>{prog_wol}%)", "Wolumen%", ascending=False, tab_id="wolumen")
 
         with s_tab[3]:
             st.markdown("*Spolki blisko rocznych szczytow*")
@@ -873,7 +873,7 @@ with main_tab2:
                 ("1M%", "Zmiana 1M"),
                 ("52W_High", "52W High"),
                 ("RSI", "RSI")
-            ], "🏆 Blisko 52-week HIGH", "Od_High%", ascending=False)
+            ], "🏆 Blisko 52-week HIGH", "Od_High%", ascending=False, tab_id="high")
 
         with s_tab[4]:
             st.markdown("*Spolki blisko rocznych dolkow*")
@@ -887,7 +887,7 @@ with main_tab2:
                 ("1M%", "Zmiana 1M"),
                 ("52W_Low", "52W Low"),
                 ("RSI", "RSI")
-            ], f"📉 Blisko 52-week LOW (max +{prog_low}%)", "Od_Low%", ascending=True)
+            ], f"📉 Blisko 52-week LOW (max +{prog_low}%)", "Od_Low%", ascending=True, tab_id="low")
 
         with s_tab[5]:
             st.markdown("*Spolki niedowartosciowane fundamentalnie*")
@@ -909,7 +909,7 @@ with main_tab2:
                 ("ROE", "ROE %"),
                 ("1M%", "Zmiana 1M"),
                 ("MCap_mld", "MCap mld")
-            ], f"💎 Tanie (P/E<{max_pe}, ROE>{min_roe}%)", "PE", ascending=True)
+            ], f"💎 Tanie (P/E<{max_pe}, ROE>{min_roe}%)", "PE", ascending=True, tab_id="tanie")
 
         with s_tab[6]:
             st.markdown("*Spolki z silnym trendem technicznym*")
@@ -948,7 +948,7 @@ with main_tab2:
                 ("RSI", "RSI"),
                 ("MACD", "MACD"),
                 ("Nad_SMA200", "Nad SMA200")
-            ], opis, "1M%", ascending=False)
+            ], opis, "1M%", ascending=False, tab_id="momentum")
     else:
         st.info("👈 Kliknij **Szybki skan** lub **Pelny skan** w panelu bocznym.")
         st.markdown("### 📚 Co znajdzie skaner?")
