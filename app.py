@@ -990,17 +990,29 @@ with main_tab2:
                 ("RSI", "RSI")
             ], f"💥 TOP spadki ({interval2}) - potencjalne okazje", col, ascending=True)
 
-        with s_tab[2]:  # WOLUMEN
-            dane = sdf_f[sdf_f["Wolumen%"] > 200].copy()
+         with s_tab[2]:  # WOLUMEN
+            st.markdown("*Spółki z nietypowym wolumenem - często pierwszy sygnał że coś się dzieje*")
+            prog_wol = st.slider("Minimalny wzrost wolumenu (%)", 100, 500, 150, step=50, key="wol_slider")
+            dane = sdf_f[sdf_f["Wolumen%"].notna() & (sdf_f["Wolumen%"] > prog_wol)].copy()
+            if len(dane) == 0:
+                st.warning(f"Brak spółek z wolumenem >{prog_wol}%. Spróbuj obniżyć próg.")
+                dane = sdf_f[sdf_f["Wolumen%"].notna()].nlargest(20, "Wolumen%").copy()
+                st.info(f"Pokazuję TOP 20 z najwyższym wolumenem (min. {dane['Wolumen%'].min():.0f}%)")
             render_okazje(dane, [
                 ("Wolumen%", "Wol %"),
                 ("1D%", "Zmiana 1D"),
                 ("1T%", "Zmiana 1T"),
                 ("RSI", "RSI")
-            ], "📊 Nietypowy wolumen (>200% średniej) - coś się dzieje!", "Wolumen%", ascending=False)
+            ], f"📊 Nietypowy wolumen (>{prog_wol}% średniej)", "Wolumen%", ascending=False)
 
         with s_tab[3]:  # 52W HIGH
-            dane = sdf_f[sdf_f["Od_High%"].notna() & (sdf_f["Od_High%"] > -2)].copy()
+            st.markdown("*Spółki blisko rocznych szczytów - silny trend wzrostowy*")
+            prog_high = st.slider("Maks. odległość od 52W High (%)", -20, 0, -5, step=1, key="high_slider")
+            dane = sdf_f[sdf_f["Od_High%"].notna() & (sdf_f["Od_High%"] >= prog_high)].copy()
+            if len(dane) == 0:
+                st.warning(f"Brak spółek w odległości {prog_high}% od 52W High.")
+                dane = sdf_f[sdf_f["Od_High%"].notna()].nlargest(20, "Od_High%").copy()
+                st.info("Pokazuję TOP 20 najbliżej szczytu")
             render_okazje(dane, [
                 ("Od_High%", "Od 52W High %"),
                 ("1M%", "Zmiana 1M"),
@@ -1009,40 +1021,92 @@ with main_tab2:
             ], "🏆 Blisko 52-week HIGH - silny trend wzrostowy", "Od_High%", ascending=False)
 
         with s_tab[4]:  # 52W LOW
-            dane = sdf_f[sdf_f["Od_Low%"].notna() & (sdf_f["Od_Low%"] < 5)].copy()
+            st.markdown("*Spółki blisko rocznych dołków - potencjalne okazje kupna*")
+            prog_low = st.slider("Maks. odległość od 52W Low (%)", 0, 50, 15, step=5, key="low_slider")
+            dane = sdf_f[sdf_f["Od_Low%"].notna() & (sdf_f["Od_Low%"] <= prog_low)].copy()
+            if len(dane) == 0:
+                st.warning(f"Brak spółek w odległości {prog_low}% od 52W Low.")
+                dane = sdf_f[sdf_f["Od_Low%"].notna()].nsmallest(20, "Od_Low%").copy()
+                st.info("Pokazuję TOP 20 najbliżej dołka")
             render_okazje(dane, [
                 ("Od_Low%", "Od 52W Low %"),
                 ("1M%", "Zmiana 1M"),
                 ("52W_Low", "52W Low"),
                 ("RSI", "RSI")
-            ], "📉 Blisko 52-week LOW - potencjalne okazje", "Od_Low%", ascending=True)
+            ], f"📉 Blisko 52-week LOW - potencjalne okazje (max +{prog_low}% od dołka)", "Od_Low%", ascending=True)
 
         with s_tab[5]:  # TANIE
+            st.markdown("*Spółki niedowartościowane fundamentalnie*")
+            cf1, cf2 = st.columns(2)
+            with cf1:
+                max_pe = st.slider("Max P/E", 5, 30, 20, key="pe_slider")
+            with cf2:
+                min_roe = st.slider("Min ROE (%)", 0, 30, 5, key="roe_slider")
+
             dane = sdf_f[
-                sdf_f["PE"].notna() & (sdf_f["PE"] > 0) & (sdf_f["PE"] < 12) &
-                sdf_f["ROE"].notna() & (sdf_f["ROE"] > 10)
+                sdf_f["PE"].notna() & (sdf_f["PE"] > 0) & (sdf_f["PE"] < max_pe)
             ].copy()
+
+            if min_roe > 0:
+                dane_roe = dane[dane["ROE"].notna() & (dane["ROE"] > min_roe)]
+                if len(dane_roe) > 0:
+                    dane = dane_roe
+
+            if len(dane) == 0:
+                st.warning(f"Brak spółek P/E<{max_pe} i ROE>{min_roe}%. Pokazuję najtańsze wg P/E.")
+                dane = sdf_f[sdf_f["PE"].notna() & (sdf_f["PE"] > 0)].nsmallest(20, "PE").copy()
+
             render_okazje(dane, [
                 ("PE", "P/E"),
                 ("ROE", "ROE %"),
                 ("1M%", "Zmiana 1M"),
                 ("MCap_mld", "MCap mld")
-            ], "💎 Tanie fundamentalnie (P/E<12, ROE>10%)", "PE", ascending=True)
+            ], f"💎 Tanie fundamentalnie (P/E<{max_pe}, ROE>{min_roe}%)", "PE", ascending=True)
 
         with s_tab[6]:  # MOMENTUM
-            dane = sdf_f[
-                sdf_f["RSI"].notna() & (sdf_f["RSI"] >= 45) & (sdf_f["RSI"] <= 65) &
-                (sdf_f["MACD"] == "BULL") &
-                (sdf_f["Nad_SMA200"] == True) &
-                sdf_f["1M%"].notna() & (sdf_f["1M%"] > 0)
-            ].copy()
+            st.markdown("*Spółki z silnym trendem technicznym (RSI + MACD + trend)*")
+            typ_momentum = st.radio(
+                "Typ momentum:",
+                ["Silny trend wzrostowy", "Wybuchowe momentum", "Wszystkie z trendem"],
+                horizontal=True, key="mom_type"
+            )
+
+            if typ_momentum == "Silny trend wzrostowy":
+                dane = sdf_f[
+                    sdf_f["RSI"].notna() & (sdf_f["RSI"] >= 45) & (sdf_f["RSI"] <= 65) &
+                    (sdf_f["MACD"] == "BULL") &
+                    (sdf_f["Nad_SMA200"] == True)
+                ].copy()
+                opis = "🔥 Silny trend wzrostowy (RSI 45-65 + MACD BULL + nad SMA200)"
+            elif typ_momentum == "Wybuchowe momentum":
+                dane = sdf_f[
+                    sdf_f["RSI"].notna() & (sdf_f["RSI"] > 60) & (sdf_f["RSI"] < 80) &
+                    (sdf_f["MACD"] == "BULL") &
+                    sdf_f["1M%"].notna() & (sdf_f["1M%"] > 5)
+                ].copy()
+                opis = "🚀 Wybuchowe momentum (RSI 60-80 + MACD BULL + wzrost 1M >5%)"
+            else:
+                dane = sdf_f[
+                    (sdf_f["MACD"] == "BULL") &
+                    (sdf_f["Nad_SMA200"] == True)
+                ].copy()
+                opis = "📈 Trend wzrostowy (MACD BULL + nad SMA200)"
+
+            if len(dane) == 0:
+                st.warning(f"Brak spółek spełniających kryteria dla '{typ_momentum}'.")
+                dane = sdf_f[sdf_f["MACD"] == "BULL"].copy()
+                if len(dane) == 0:
+                    dane = sdf_f[sdf_f["1M%"].notna()].nlargest(20, "1M%").copy()
+                    st.info("Pokazuję TOP 20 wg wzrostu 1M")
+                else:
+                    st.info(f"Pokazuję wszystkie z MACD BULL ({len(dane)} spółek)")
+
             render_okazje(dane, [
                 ("1M%", "Zmiana 1M"),
                 ("RSI", "RSI"),
                 ("MACD", "MACD"),
                 ("Nad_SMA200", "Nad SMA200")
-            ], "🔥 Silne momentum techniczne", "1M%", ascending=False)
-
+            ], opis, "1M%", ascending=False)
     else:
         st.info("👈 Kliknij **Szybki skan** lub **Pełny skan** w panelu bocznym aby rozpocząć.")
 
