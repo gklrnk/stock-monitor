@@ -28,7 +28,7 @@ from services.basket_service import (
 from services.chart_service import wykres_techniczny, wykres_porownanie_cen
 from services.news_service import pobierz_newsy_dla_wielu
 from services.runner_service import analizuj_liste
-from utils.formatting import fmt_num, fmt_pct
+from utils.formatting import fmt_num, fmt_pct, styluj_tabele
 from utils.session_state import get_all_tickers, dodaj_do_obserwowanych
 
 
@@ -148,11 +148,7 @@ def _porownanie(koszyk):
     kolumny = [k for k in ["Ticker", "Nazwa", "Cena", "1T%", "1M%", "3M%", "PE",
                            "PBV", "ROE", "Marza", "Dywidenda", "RSI", "MACD",
                            "SYGNAL", "Score"] if k in df.columns]
-    st.dataframe(
-        df[kolumny].style.background_gradient(subset=["Score"], cmap="RdYlGn")
-        .format(precision=2, na_rep="-"),
-        width="stretch",
-    )
+    st.dataframe(styluj_tabele(df[kolumny]), width="stretch")
 
     st.markdown("##### Werdykt")
     for _, r in df.iterrows():

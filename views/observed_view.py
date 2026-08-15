@@ -19,7 +19,9 @@ from services.chart_service import (
     wykres_momentum_score, wykres_rozklad_sygnalow,
 )
 from services.runner_service import uruchom_analize_obserwowanych
-from utils.formatting import fmt_num, fmt_pct, opis_rekomendacji_analitykow
+from utils.formatting import (
+    fmt_num, fmt_pct, opis_rekomendacji_analitykow, styluj_tabele,
+)
 from utils.session_state import get_all_tickers, oznacz_analize
 
 KOLUMNY_TABELI = [
@@ -158,9 +160,7 @@ def _tabela(filtered):
     st.markdown(f"### 📋 Tabela ({len(filtered)} spolek)")
     kolumny = [k for k in KOLUMNY_TABELI if k in filtered.columns]
     st.dataframe(
-        filtered[kolumny].style
-        .background_gradient(subset=["Score"], cmap="RdYlGn")
-        .format(precision=2, na_rep="-"),
+        styluj_tabele(filtered[kolumny]),
         width="stretch", height=600,
     )
 
