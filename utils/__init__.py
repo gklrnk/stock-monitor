@@ -1,1 +1,0 @@
-# Utils module - funkcje pomocnicze
